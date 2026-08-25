@@ -1,0 +1,5 @@
+{
+  "name": "crypto-scrabble-shared",
+  "private": true,
+  "type": "module"
+}

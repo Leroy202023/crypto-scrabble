@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# build artifacts
+target/
+program/target/
+.anchor/
+dist/
+
+# keys & secrets — NEVER commit
+**/*-keypair.json
+.env
+.env.*
+id.json
+*.key
+wallet.json
+
+# solana localnet ledger
+test-ledger/
+.ledger/
+
+# misc
+.DS_Store
+*.log
