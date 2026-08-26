@@ -5,6 +5,8 @@ import { proofForWord } from '../lib/dict';
 import { loadEconomy, sol } from '../lib/state';
 import { buildSubmitWordTx } from '../lib/submitWord';
 import { friendlyError } from '../lib/friendlyError';
+import { sfx } from '../lib/sfx';
+import { confettiBurst } from '../lib/confetti';
 import type { PendingTile } from './Board';
 
 type Props = {
@@ -87,8 +89,12 @@ export default function SubmitPanel({ cells, placements, onSubmitted, onCleared 
       setOkMsg(`Played "${preview.word.toUpperCase()}" for ${preview.totalScore} pts → ${sol(preview.totalScore * perPointSol)} • sig ${sig.slice(0, 16)}…`);
       onCleared();
       onSubmitted();
+      sfx.success();
+      confettiBurst();
+      setTimeout(() => sfx.coin(), 350);
     } catch (e) {
       setErr(friendlyError(e));
+      sfx.error();
     } finally {
       setBusy(false);
     }

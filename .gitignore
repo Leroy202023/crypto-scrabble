@@ -26,3 +26,11 @@ test-ledger/
 # runtime artifacts
 .known_players.json
 .vercel/
+
+# scrabble bags secrets & runtime
+data/bags/reveals.json
+data/bags/mints.json
+data/bags/ledger.json
+data/bags/.sigs.json
+data/bags/*.svg
+.bags_env

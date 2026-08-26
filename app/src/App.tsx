@@ -9,6 +9,8 @@ import SubmitPanel from './components/SubmitPanel';
 import MarketPanel from './components/MarketPanel';
 import GameStats from './components/GameStats';
 import Landing from './components/Landing';
+import BagsPanel from './components/BagsPanel';
+import { sfx } from './lib/sfx';
 import { useRack } from './lib/rack';
 import { BOARD, getProgramId, getRpcUrl, loadEconomy, shortAddr } from './lib/state';
 import { getClusterKey, setClusterKey, CLUSTERS, CLUSTER_ORDER, type ClusterKey } from './lib/clusters';
@@ -59,6 +61,7 @@ function TopBar() {
         <span className="brand-tag">burn letters · bank SOL</span>
       </div>
       <div className="walletbox">
+        <a className="ghost" href="/bags">Bags</a>
         <div className="netmenu-wrap" ref={netRef}>
           <button
             className={`netbtn${cluster.deployed ? '' : ' netbtn-warn'}`}
@@ -189,6 +192,7 @@ function Table() {
     (i: number) => {
       if (cells[i]?.occupied) return;
       if (placements[i]) {
+        sfx.select();
         setPlacements((p) => {
           const n = { ...p };
           delete n[i];
@@ -197,6 +201,7 @@ function Table() {
         return;
       }
       if (!selected) return;
+      sfx.place();
       // blank tile needs a letter chosen via the picker
       if (selected === '*') {
         setBlankAt(i);
@@ -283,12 +288,15 @@ export default function App() {
     window.scrollTo(0, 0);
   };
   const isPlay = route.startsWith('/play');
+  const isBags = route.startsWith('/bags');
 
   return (
     <ConnectionProvider endpoint={getRpcUrl()} key={clusterKey}>
       <WalletProvider wallets={wallets} autoConnect={false}>
-        {!isPlay ? (
+        {!isPlay && !isBags ? (
           <Landing onPlay={() => go('/play')} />
+        ) : isBags ? (
+          <BagsPanel onPlay={() => go('/play')} />
         ) : (
         <div className="app">
           <TopBar />

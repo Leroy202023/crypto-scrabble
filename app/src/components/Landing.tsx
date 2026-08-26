@@ -195,6 +195,26 @@ export default function Landing({ onPlay }: { onPlay: () => void }) {
         </div>
       </section>
 
+      <section className="land-section two-col">
+        <div>
+          <h2>Scrabble Bags</h2>
+          <p>
+            Prefer luck to skill? Buy a sealed bag — a 1-of-1 NFT hiding a
+            bundle of playable letter tokens. Crack it open and every letter
+            inside drops straight into your rack, ready to burn for SOL.
+          </p>
+          <a className="ghost-link" href="/bags">open the pack store →</a>
+        </div>
+        <div>
+          <h2>Buy single letters</h2>
+          <p>
+            Need one specific tile? Every letter is its own Token-2022 mint —
+            grab exactly what your rack is missing from the in-game market,
+            priced live by scarcity.
+          </p>
+        </div>
+      </section>
+
       <section className="land-section faq">
         <h2>Questions</h2>
         <details>
