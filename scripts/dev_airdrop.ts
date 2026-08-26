@@ -20,6 +20,25 @@ function loadKeypair(p: string): Keypair {
   return Keypair.fromSecretKey(new Uint8Array(JSON.parse(fs.readFileSync(p, 'utf8'))));
 }
 
+async function sendWithRetry(connection: Connection, tx: Transaction, signers: Keypair[], attempts = 5): Promise<void> {
+  for (let i = 1; ; i++) {
+    try {
+      tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+      tx.feePayer = signers[0].publicKey;
+      await sendAndConfirmTransaction(connection, tx, signers);
+      return;
+    } catch (e: unknown) {
+      const msg = String(e);
+      // public RPC throttles bursts — back off and retry
+      if (i < attempts && /429|Too Many Requests|Blockhash not found/i.test(msg)) {
+        await new Promise((r) => setTimeout(r, 1200 * i));
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
 async function main() {
   const [playerArg, ...specs] = process.argv.slice(2);
   if (!playerArg || specs.length === 0) throw new Error('usage: dev_airdrop.ts <PLAYER> letter=qty ...');
@@ -46,7 +65,8 @@ async function main() {
       );
     }
     tx.add(createMintToInstruction(mint, ata, authority.publicKey, qty, [], TOKEN_2022_PROGRAM_ID));
-    await sendAndConfirmTransaction(connection, tx, [authority]);
+    await sendWithRetry(connection, tx, [authority]);
+    await new Promise((r) => setTimeout(r, 350));
     console.log(`minted ${qty} $${letter.toUpperCase()} -> ${ata.toBase58()}`);
   }
 }

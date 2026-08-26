@@ -24,8 +24,8 @@ async function main() {
   );
   const amountSol = Number(process.env.AMOUNT_SOL ?? '0.5');
 
-  const before = await conn.getBalance(vaultPda);
-  console.log(`[topup] vault ${vaultPda.toBase58()}`);
+  const before = await conn.getBalance(vaultPda());
+  console.log(`[topup] vault ${vaultPda().toBase58()}`);
   console.log(`[topup] balance before: ${(before / LAMPORTS_PER_SOL).toFixed(4)} SOL`);
   console.log(`[topup] sending ${amountSol} SOL from ${authority.publicKey.toBase58()}…`);
 
@@ -34,14 +34,14 @@ async function main() {
     new Transaction().add(
       SystemProgram.transfer({
         fromPubkey: authority.publicKey,
-        toPubkey: vaultPda,
+        toPubkey: vaultPda(),
         lamports: Math.round(amountSol * LAMPORTS_PER_SOL),
       }),
     ),
     [authority],
   );
 
-  const after = await conn.getBalance(vaultPda);
+  const after = await conn.getBalance(vaultPda());
   console.log(`[topup] tx ${sig}`);
   console.log(`[topup] balance after:  ${(after / LAMPORTS_PER_SOL).toFixed(4)} SOL`);
 }
