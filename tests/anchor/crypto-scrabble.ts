@@ -34,14 +34,19 @@ describe('crypto-scrabble', () => {
   const vaultPda = PublicKey.findProgramAddressSync([Buffer.from('vault')], program.programId)[0];
 
   // tiny deterministic dictionary - same merkle implementation as the production launch script
-  const DICT = ['at', 'cat', 'dog', 'hat', 'rat', 'sun']; // 6 words -> padded to 8 leaves
+  const DICT = ['at', 'as', 'cat', 'co', 'dog', 'hat', 'oso', 'rat', 'sun', 'to']; // padded to 16 leaves
   const tree = buildTree(DICT);
   const catLeafIndex = tree.leaves.findIndex((l) => Buffer.from(l).equals(Buffer.from(wordToLeaf('cat'))));
   const root = [...tree.root];
 
+  const leafIndex = (w: string) =>
+    tree.leaves.findIndex((l) => Buffer.from(l).equals(Buffer.from(wordToLeaf(w))));
+
   const mintKps: Record<string, Keypair> = {
     c: Keypair.generate(), a: Keypair.generate(), t: Keypair.generate(),
+    o: Keypair.generate(), s: Keypair.generate(),
   };
+  const blankMintKp = Keypair.generate();
   const player = Keypair.generate();
   const BURN_QTY = new anchor.BN(1000);
   const ENTRY_FEE = new anchor.BN(0.02 * LAMPORTS_PER_SOL);
@@ -52,9 +57,9 @@ describe('crypto-scrabble', () => {
 
   async function registerMints() {
     const arr: PublicKey[] = Array.from({ length: 26 }, () => PublicKey.default);
-    arr['c'.charCodeAt(0) - 97] = mintKps.c.publicKey;
-    arr['a'.charCodeAt(0) - 97] = mintKps.a.publicKey;
-    arr['t'.charCodeAt(0) - 97] = mintKps.t.publicKey;
+    for (const l of Object.keys(mintKps)) {
+      arr[l.charCodeAt(0) - 97] = mintKps[l].publicKey;
+    }
     await program.methods
       .setLetterMints(arr)
       .accounts({ authority: authority.publicKey, config: configPda })
@@ -90,16 +95,16 @@ describe('crypto-scrabble', () => {
       ),
     );
 
-    for (const l of ['c', 'a', 't']) await createPlainToken2022Mint(mintKps[l]);
+    for (const l of ['c', 'a', 't', 'o', 's']) await createPlainToken2022Mint(mintKps[l]);
 
     await program.methods
-      .initialize(root, ENTRY_FEE, PER_POINT, BURN_QTY)
+      .initialize(root, ENTRY_FEE, PER_POINT, BURN_QTY, blankMintKp.publicKey)
       .accounts({ authority: authority.publicKey, config: configPda, board: boardPda, vault: vaultPda })
       .rpc();
 
     await registerMints();
 
-    for (const l of ['c', 'a', 't']) {
+    for (const l of ['c', 'a', 't', 'o', 's']) {
       const mint = mintKps[l].publicKey;
       const dest = ataOf(player.publicKey, mint);
       await program.provider.sendAndConfirm(
@@ -118,11 +123,11 @@ describe('crypto-scrabble', () => {
   });
 
   it('initialized config + empty board', async () => {
-    const cfg = await program.account.gameConfig.fetch(configPda);
+    const cfg = await (program.account as any).gameConfig.fetch(configPda);
     expect(cfg.authority.toString()).to.equal(authority.publicKey.toString());
     expect([...cfg.merkleRoot]).to.deep.equal(root);
     expect(cfg.totalWordsPlayed.toString()).to.equal('0');
-    const board = await program.account.gameBoard.fetch(boardPda);
+    const board = await (program.account as any).gameBoard.fetch(boardPda);
     expect(board.wordsPlayed.toString()).to.equal('0');
   });
 
@@ -134,8 +139,10 @@ describe('crypto-scrabble', () => {
           startX: 6, startY: 7, direction: 0,
           letters: Buffer.from("zzz", "ascii"), // not in DICT
           newMask: [true, true, true],
+          blankMask: [false, false, false],
           leafIndex: catLeafIndex, // valid index, wrong word -> leaf mismatch
           proof: proof.map((p) => Buffer.from(p)),
+          crossWords: [],
         })
         .accounts({ player: player.publicKey, config: configPda, board: boardPda, vault: vaultPda, tokenProgram: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
         .remainingAccounts([
@@ -163,8 +170,10 @@ describe('crypto-scrabble', () => {
         startX: 6, startY: 7, direction: 0,
         letters: Buffer.from("cat", "ascii"),
         newMask: [true, true, true],
+        blankMask: [false, false, false],
         leafIndex: catLeafIndex,
         proof: proof.map((p) => Buffer.from(p)),
+        crossWords: [],
       })
       .accounts({ player: player.publicKey, config: configPda, board: boardPda, vault: vaultPda, tokenProgram: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
       .remainingAccounts([
@@ -191,18 +200,81 @@ describe('crypto-scrabble', () => {
 
     // net lamports = payout - entry fee - tx fee
     const after = await program.provider.connection.getBalance(player.publicKey);
-    const score = 5; // c=3 a=1 t=1
+    // c=3 a=1 t=1, doubled by the center double-word square -> 10
+    const score = 10;
     const netExpected = score * PER_POINT.toNumber() - ENTRY_FEE.toNumber();
     // allow the ~5000 lamport tx fee
     expect(after).to.be.greaterThan(before + netExpected - 10_000);
     expect(after).to.be.lessThan(before + netExpected + 1);
 
-    const board = await program.account.gameBoard.fetch(boardPda);
+    const board = await (program.account as any).gameBoard.fetch(boardPda);
     expect(board.wordsPlayed.toString()).to.equal('1');
 
-    const cfg = await program.account.gameConfig.fetch(configPda);
+    const cfg = await (program.account as any).gameConfig.fetch(configPda);
     expect(cfg.totalWordsPlayed.toString()).to.equal('1');
     expect(cfg.totalBurnedUnits.toString()).to.equal('3000');
+  });
+
+  it('plays OSO across CAT and pays the main word + every cross word', async () => {
+    // board now holds C A T at (6,7),(7,7),(8,7) from the previous test.
+    // OSO placed at (6,8),(7,8),(8,8) is connected and forms the vertical
+    // cross words CO (col6), AS (col7), TO (col8).
+    const proof = getProof(tree, leafIndex('oso'));
+    const crossWords = [
+      { leafIndex: leafIndex('co'), proof: getProof(tree, leafIndex('co')) },
+      { leafIndex: leafIndex('as'), proof: getProof(tree, leafIndex('as')) },
+      { leafIndex: leafIndex('to'), proof: getProof(tree, leafIndex('to')) },
+    ];
+    const before = await program.provider.connection.getBalance(player.publicKey);
+
+    await program.methods
+      .submitWord({
+        startX: 6, startY: 8, direction: 0,
+        letters: Buffer.from('oso', 'ascii'),
+        newMask: [true, true, true],
+        blankMask: [false, false, false],
+        leafIndex: leafIndex('oso'),
+        proof: proof.map((p) => Buffer.from(p)),
+        crossWords: crossWords.map((c) => ({
+          leafIndex: c.leafIndex,
+          proof: c.proof.map((p) => Buffer.from(p)),
+        })),
+      })
+      .accounts({ player: player.publicKey, config: configPda, board: boardPda, vault: vaultPda, tokenProgram: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
+      .remainingAccounts([
+        { pubkey: mintKps.o.publicKey, isSigner: false, isWritable: true },
+        { pubkey: ataOf(player.publicKey, mintKps.o.publicKey), isSigner: false, isWritable: true },
+        { pubkey: mintKps.s.publicKey, isSigner: false, isWritable: true },
+        { pubkey: ataOf(player.publicKey, mintKps.s.publicKey), isSigner: false, isWritable: true },
+        { pubkey: mintKps.o.publicKey, isSigner: false, isWritable: true },
+        { pubkey: ataOf(player.publicKey, mintKps.o.publicKey), isSigner: false, isWritable: true },
+      ])
+      .signers([player])
+      .rpc();
+
+    // 3 new tiles burned: 'o' appears twice (->8000), 's' once (->9000)
+    const oBal = (
+      await getAccount(program.provider.connection, ataOf(player.publicKey, mintKps.o.publicKey), undefined, TOKEN_2022_PROGRAM_ID)
+    ).amount.toString();
+    const sBal = (
+      await getAccount(program.provider.connection, ataOf(player.publicKey, mintKps.s.publicKey), undefined, TOKEN_2022_PROGRAM_ID)
+    ).amount.toString();
+    expect(oBal).to.equal('8000');
+    expect(sBal).to.equal('9000');
+
+    // premium: O at (6,8) and (8,8) sit on double-letter squares.
+    // main OSO = 2+1+2 = 5; CO = 3+2 = 5; AS = 2; TO = 1+2 = 3 -> 15
+    const score = 15;
+    const after = await program.provider.connection.getBalance(player.publicKey);
+    const netExpected = score * PER_POINT.toNumber() - ENTRY_FEE.toNumber();
+    expect(after).to.be.greaterThan(before + netExpected - 10_000);
+    expect(after).to.be.lessThan(before + netExpected + 1);
+
+    const board = await (program.account as any).gameBoard.fetch(boardPda);
+    expect(board.wordsPlayed.toString()).to.equal('2');
+
+    const cfg = await (program.account as any).gameConfig.fetch(configPda);
+    expect(cfg.totalBurnedUnits.toString()).to.equal('6000');
   });
 
   it('rejects overwriting an occupied cell', async () => {
@@ -213,8 +285,10 @@ describe('crypto-scrabble', () => {
           startX: 7, startY: 7, direction: 0,
           letters: Buffer.from("at", "ascii"), // starts on the occupied center 'a'
           newMask: [true, true],
+          blankMask: [false, false],
           leafIndex: tree.leaves.findIndex((l) => Buffer.from(l).equals(Buffer.from(wordToLeaf('at')))),
           proof: proof.map((p) => Buffer.from(p)),
+          crossWords: [],
         })
         .accounts({ player: player.publicKey, config: configPda, board: boardPda, vault: vaultPda, tokenProgram: TOKEN_2022_PROGRAM_ID, systemProgram: SystemProgram.programId })
         .remainingAccounts([

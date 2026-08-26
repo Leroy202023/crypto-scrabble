@@ -1,0 +1,13 @@
+{
+  "cluster": "https://api.devnet.solana.com",
+  "programId": "AJVQGSNjciPGhotWNtoRSocWEVWGtFQNqkSVzmgiYMtx",
+  "config": "iuxS6ttsQayHUJ8VnzUM1DuRk5qKdw9QW9bqH3sxBcz",
+  "board": "CEwvSh8Bd5tmMypVWQpCqYgSKxjodyDoQ1oXvSmvTm5B",
+  "vault": "C1hTYszikqXC1vc7kZoNu2Z4pgHe9Pu5xDSCjCkSSiyV",
+  "merkleRoot": "27dca25be96e24ffd17e08a327387a67e87accffd210c79117c16f209b62a3c6",
+  "economy": {
+    "entryFeeLamports": "50000000",
+    "payoutPerPointLamports": "5000000",
+    "burnQuantityPerTile": "1000"
+  }
+}

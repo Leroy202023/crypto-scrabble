@@ -23,6 +23,7 @@ import {
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
 import { PROGRAM_ID, boardPda, configPda, vaultPda } from '../shared/program';
+import { clusterFromRpc } from './launch_letters';
 
 function loadKeypair(p: string): Keypair {
   return Keypair.fromSecretKey(new Uint8Array(JSON.parse(fs.readFileSync(p, 'utf8'))));
@@ -49,6 +50,7 @@ async function main() {
   const funding = BigInt(Math.round(Number(process.env.VAULT_FUNDING_SOL ?? 5) * LAMPORTS_PER_SOL));
 
   // ---- initialize ----
+  const blankMint = new PublicKey(letters.mints['*'].mint);
   const initIx = new TransactionInstruction({
     programId: PROGRAM_ID,
     keys: [
@@ -64,10 +66,16 @@ async function main() {
       u64le(entryFee),
       u64le(perPoint),
       u64le(burnQty),
+      blankMint.toBuffer(),
     ]),
   });
-  const sig1 = await sendAndConfirmTransaction(connection, new Transaction().add(initIx), [authority]);
-  console.log('initialized:', sig1);
+  const cfgInfo = await connection.getAccountInfo(configPda());
+  if (cfgInfo) {
+    console.log('config already initialized, skipping initialize');
+  } else {
+    const sig1 = await sendAndConfirmTransaction(connection, new Transaction().add(initIx), [authority]);
+    console.log('initialized:', sig1);
+  }
 
   // ---- set letter mints ----
   const mints = 'abcdefghijklmnopqrstuvwxyz'
@@ -107,8 +115,9 @@ async function main() {
   );
   console.log('vault funded:', sig4);
 
+  const cluster = clusterFromRpc(process.env.RPC_URL ?? 'localnet');
   const deploy = {
-    cluster: process.env.RPC_URL ?? 'localnet',
+    cluster,
     programId: PROGRAM_ID.toBase58(),
     config: configPda().toBase58(),
     board: boardPda().toBase58(),
@@ -120,8 +129,14 @@ async function main() {
       burnQuantityPerTile: burnQty.toString(),
     },
   };
-  fs.writeFileSync(path.resolve(import.meta.dirname!, '../deployment.json'), JSON.stringify(deploy, null, 2));
-  console.log('wrote deployment.json');
+  const dest = path.resolve(import.meta.dirname!, '../deployment.json');
+  fs.writeFileSync(dest, JSON.stringify(deploy, null, 2));
+  console.log(`wrote ${dest}`);
+  const pubDest = path.resolve(import.meta.dirname!, '../app/public/deployment.json');
+  fs.writeFileSync(pubDest, JSON.stringify(deploy, null, 2));
+  const pubCluster = path.resolve(import.meta.dirname!, `../app/public/deployment.${cluster}.json`);
+  fs.writeFileSync(pubCluster, JSON.stringify(deploy, null, 2));
+  console.log(`wrote ${pubDest} and ${pubCluster}`);
 }
 
 main().catch((e) => {

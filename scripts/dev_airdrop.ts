@@ -31,7 +31,7 @@ async function main() {
   for (const spec of specs) {
     const [letter, qtyStr] = spec.split('=');
     const qty = BigInt(qtyStr);
-    if (!/^[a-z]$/.test(letter)) throw new Error(`bad letter ${letter}`);
+    if (!/^[a-z*]$/.test(letter)) throw new Error(`bad letter ${letter}`);
     const mint = new PublicKey(letters.mints[letter].mint);
 
     const ata = PublicKey.findProgramAddressSync(

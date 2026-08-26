@@ -1,0 +1,74 @@
+{
+  "name": "Scrabble Bag #1",
+  "tier": "rare",
+  "rng_seed": "0x13c6ef36a",
+  "contents": [
+    {
+      "letter": "*",
+      "qty": 1
+    },
+    {
+      "letter": "a",
+      "qty": 2
+    },
+    {
+      "letter": "b",
+      "qty": 1
+    },
+    {
+      "letter": "e",
+      "qty": 1
+    },
+    {
+      "letter": "g",
+      "qty": 1
+    },
+    {
+      "letter": "j",
+      "qty": 2
+    },
+    {
+      "letter": "n",
+      "qty": 1
+    },
+    {
+      "letter": "o",
+      "qty": 4
+    },
+    {
+      "letter": "r",
+      "qty": 2
+    },
+    {
+      "letter": "u",
+      "qty": 2
+    },
+    {
+      "letter": "v",
+      "qty": 1
+    },
+    {
+      "letter": "w",
+      "qty": 1
+    },
+    {
+      "letter": "z",
+      "qty": 1
+    }
+  ],
+  "sol_voucher_lamports": 120000000,
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "rare"
+    },
+    {
+      "trait_type": "Tiles",
+      "value": 20
+    },
+    {
+      "trait_type": "Blanks",
+      "value": 1
+    }
+  ]
+}

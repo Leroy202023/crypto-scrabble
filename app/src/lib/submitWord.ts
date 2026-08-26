@@ -7,7 +7,7 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
-import { BOARD, CONFIG, PROGRAM_ID, VAULT, connection, letterMints } from './state';
+import { BOARD, CONFIG, VAULT, getProgramId, connection, letterMints } from './state';
 
 const ATA_PROGRAM = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
 
@@ -24,6 +24,11 @@ const u32 = (n: number) => {
   return b;
 };
 
+export type CrossWordProof = {
+  leafIndex: number;
+  proof: Uint8Array[];
+};
+
 export type SubmitParams = {
   player: PublicKey;
   startX: number;
@@ -31,9 +36,43 @@ export type SubmitParams = {
   direction: 0 | 1;
   letters: Uint8Array; // ascii a..z (full run incl. bridged tiles)
   newMask: boolean[];
+  blankMask: boolean[]; // parallel to letters; true = blank (burns blank mint, 0 pts)
   leafIndex: number;
   proof: Uint8Array[];
+  crossWords: CrossWordProof[];
 };
+
+/**
+ * Seralizes the submit_word instruction data (Anchor-compatible). Pure: needs
+ * the letter->mint map rather than fetching /letters.json. The exact byte format
+ * must match the program's SubmitWordArgs AnchorSerialize so the chain accepts it.
+ */
+export function encodeSubmitWordData(p: SubmitParams, mints: Record<string, PublicKey>): Buffer {
+  const dataParts: Buffer[] = [
+    discriminator('submit_word'),
+    u8(p.startX),
+    u8(p.startY),
+    u8(p.direction),
+    u32(p.letters.length),
+    Buffer.from(p.letters),
+    u32(p.newMask.length),
+    Buffer.from(p.newMask.map((b) => (b ? 1 : 0))),
+    u32(p.blankMask.length),
+    Buffer.from(p.blankMask.map((b) => (b ? 1 : 0))),
+    u32(p.leafIndex >>> 0),
+    u32(p.proof.length),
+  ];
+  for (const sib of p.proof) dataParts.push(Buffer.from(sib));
+
+  // cross-word proofs (canonical order: matches program detection)
+  dataParts.push(u32(p.crossWords.length));
+  for (const cw of p.crossWords) {
+    dataParts.push(u32(cw.leafIndex >>> 0));
+    dataParts.push(u32(cw.proof.length));
+    for (const sib of cw.proof) dataParts.push(Buffer.from(sib));
+  }
+  return Buffer.concat(dataParts);
+}
 
 /**
  * Builds the submit_word transaction.
@@ -44,26 +83,14 @@ export type SubmitParams = {
 export async function buildSubmitWordTx(p: SubmitParams): Promise<VersionedTransaction> {
   const [conn, mints] = await Promise.all([connection(), letterMints()]);
 
-  const dataParts: Buffer[] = [
-    discriminator('submit_word'),
-    u8(p.startX),
-    u8(p.startY),
-    u8(p.direction),
-    u32(p.letters.length),
-    Buffer.from(p.letters),
-    u32(p.newMask.length),
-    Buffer.from(p.newMask.map((b) => (b ? 1 : 0))),
-    u32(p.leafIndex >>> 0),
-    u32(p.proof.length),
-  ];
-  for (const sib of p.proof) dataParts.push(Buffer.from(sib));
+  const data = encodeSubmitWordData(p, mints);
 
   type Meta = { pubkey: PublicKey; isSigner: boolean; isWritable: boolean };
   const keys: Meta[] = [
     { pubkey: p.player, isSigner: true, isWritable: true },
-    { pubkey: CONFIG, isSigner: false, isWritable: true },
-    { pubkey: BOARD, isSigner: false, isWritable: true },
-    { pubkey: VAULT, isSigner: false, isWritable: true },
+    { pubkey: CONFIG(), isSigner: false, isWritable: true },
+    { pubkey: BOARD(), isSigner: false, isWritable: true },
+    { pubkey: VAULT(), isSigner: false, isWritable: true },
     { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
     { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
   ];
@@ -71,7 +98,8 @@ export async function buildSubmitWordTx(p: SubmitParams): Promise<VersionedTrans
   for (let i = 0; i < p.letters.length; i++) {
     if (!p.newMask[i]) continue;
     const letter = String.fromCharCode(p.letters[i]).toLowerCase();
-    const mint = mints[letter];
+    // blanks burn the wildcard mint instead of the letter mint
+    const mint = p.blankMask[i] && mints['*'] ? mints['*'] : mints[letter];
     if (!mint) throw new Error(`no mint registered for $${letter.toUpperCase()} — run npm run launch:letters`);
     const ata = PublicKey.findProgramAddressSync(
       [p.player.toBuffer(), TOKEN_2022_PROGRAM_ID.toBuffer(), mint.toBuffer()],
@@ -84,9 +112,9 @@ export async function buildSubmitWordTx(p: SubmitParams): Promise<VersionedTrans
   const ixs: TransactionInstruction[] = [
     ComputeBudgetProgram.setComputeUnitLimit({ units: 500_000 }),
     new TransactionInstruction({
-      programId: PROGRAM_ID,
+      programId: getProgramId(),
       keys,
-      data: Buffer.concat(dataParts),
+      data,
     }),
   ];
 

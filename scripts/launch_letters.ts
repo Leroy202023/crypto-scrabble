@@ -39,6 +39,10 @@ import {
 
 export const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
+/** The wildcard tile: burns instead of a letter when playing a blank. */
+export const BLANK_KEY = '*';
+export const BLANK_SUPPLY = 200_000_000n; // classic Scrabble ships 2 blanks
+
 // Scrabble tile distribution x 1e6 base units. Total ≈ 10B per full set scale.
 export const SUPPLY_PER_LETTER: Record<string, bigint> = Object.fromEntries(
   [
@@ -56,6 +60,13 @@ export const SUPPLY_PER_LETTER: Record<string, bigint> = Object.fromEntries(
 
 /** Fraction of every letter's supply parked in the treasury at genesis. */
 export const TREASURY_ALLOCATION_BPS = 800; // 8%
+
+/** Map an RPC url to a cluster key for publishing cluster-specific assets. */
+export function clusterFromRpc(rpc: string): string {
+  if (rpc.includes('mainnet')) return 'mainnet';
+  if (rpc.includes('devnet')) return 'devnet';
+  return 'localnet';
+}
 
 function loadKeypair(p: string): Keypair {
   return Keypair.fromSecretKey(new Uint8Array(JSON.parse(fs.readFileSync(p, 'utf8'))));
@@ -78,10 +89,11 @@ async function main() {
   console.log(`treasury  ${treasury.toBase58()} balance ${(balances[1] / LAMPORTS_PER_SOL).toFixed(3)} SOL`);
 
   const out: Record<string, { mint: string; decimals: number; supply: string }> = {};
-  for (const letter of LETTERS) {
+
+  async function createTileMint(key: string, supply: bigint): Promise<void> {
     const mintKeypair = Keypair.generate();
-    const supply = SUPPLY_PER_LETTER[letter];
     const treasuryAmount = (supply * BigInt(TREASURY_ALLOCATION_BPS)) / 10_000n;
+    void treasuryAmount;
 
     const space = getMintLen([ExtensionType.TransferFeeConfig]);
     const lamports = await connection.getMinimumBalanceForRentExemption(space);
@@ -134,16 +146,34 @@ async function main() {
     const sig = await connection.sendTransaction(tx, { maxRetries: 5 });
     await connection.confirmTransaction(sig, 'confirmed');
 
-    out[letter] = { mint: mintKeypair.publicKey.toBase58(), decimals: 0, supply: supply.toString() };
-    console.log(`$${letter.toUpperCase()} mint ${mintKeypair.publicKey.toBase58()} supply ${supply}`);
+    out[key] = { mint: mintKeypair.publicKey.toBase58(), decimals: 0, supply: supply.toString() };
+    console.log(`$${key.toUpperCase()} mint ${mintKeypair.publicKey.toBase58()} supply ${supply}`);
   }
 
+  for (const letter of LETTERS) {
+    await createTileMint(letter, SUPPLY_PER_LETTER[letter]);
+  }
+  // the blank/wildcard tile
+  await createTileMint(BLANK_KEY, BLANK_SUPPLY);
+
+  const cluster = clusterFromRpc(process.env.RPC_URL ?? 'localnet');
+  const payload = {
+    cluster,
+    authority: authority.publicKey.toBase58(),
+    treasury: treasury.toBase58(),
+    transferFeeBps: feeBps,
+    mints: out,
+  };
   const dest = path.resolve(import.meta.dirname!, '../letters.json');
-  fs.writeFileSync(
-    dest,
-    JSON.stringify({ cluster: process.env.RPC_URL ?? 'localnet', authority: authority.publicKey.toBase58(), treasury: treasury.toBase58(), transferFeeBps: feeBps, mints: out }, null, 2),
-  );
+  fs.writeFileSync(dest, JSON.stringify(payload, null, 2));
   console.log(`wrote ${dest}`);
+  // Publish a cluster-specific copy into the app's public dir so the UI can
+  // load the right mints when the user switches networks at runtime.
+  const pubDest = path.resolve(import.meta.dirname!, '../app/public/letters.json');
+  fs.writeFileSync(pubDest, JSON.stringify(payload, null, 2));
+  const pubCluster = path.resolve(import.meta.dirname!, `../app/public/letters.${cluster}.json`);
+  fs.writeFileSync(pubCluster, JSON.stringify(payload, null, 2));
+  console.log(`wrote ${pubDest} and ${pubCluster}`);
 }
 
 main().catch((e) => {

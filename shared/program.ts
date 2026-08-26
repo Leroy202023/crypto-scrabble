@@ -1,7 +1,7 @@
 import { PublicKey } from '@solana/web3.js';
 
 export const PROGRAM_ID = new PublicKey(
-  '53h7akfbCsPwDPQax7ANViJp7gSs9BGn4bY4p9zFkrUT',
+  'AJVQGSNjciPGhotWNtoRSocWEVWGtFQNqkSVzmgiYMtx',
 );
 
 export const CONFIG_SEED = Buffer.from('config');
@@ -30,4 +30,10 @@ export function scoreWord(word: string): number {
   return [...word.toLowerCase()]
     .filter((c) => c >= 'a' && c <= 'z')
     .reduce((s, c) => s + LETTER_VALUES[c.charCodeAt(0) - 97], 0);
+}
+
+/** Like scoreWord, but positions marked blank (parallel `blanks`) score 0. */
+export function scoreWordWithBlanks(word: string, blanks?: boolean[]): number {
+  const chars = [...word.toLowerCase()].filter((c) => c >= 'a' && c <= 'z');
+  return chars.reduce((s, c, i) => s + (blanks?.[i] ? 0 : LETTER_VALUES[c.charCodeAt(0) - 97]), 0);
 }

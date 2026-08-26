@@ -34,6 +34,8 @@ pub struct GameConfig {
     pub total_burned_units: u64,
     /// `letter_mints[letter - 'a']` — Token-2022 mint for each letter.
     pub letter_mints: [Pubkey; LETTER_COUNT],
+    /// Token-2022 mint burned when a BLANK tile is placed.
+    pub blank_mint: Pubkey,
     pub vault_bump: u8,
     /// Tail padding for bytemuck `Pod` (total size must be 8-aligned).
     pub _pad: [u8; 7],
@@ -45,6 +47,7 @@ impl GameConfig {
         + 32              // merkle_root
         + 8 * 6           // numeric fields
         + 32 * LETTER_COUNT // letter_mints
+        + 32              // blank_mint
         + 1               // vault_bump
         + 128;            // headroom for Anchor reallocation safety
 }
@@ -55,23 +58,25 @@ pub struct Cell {
     /// 0/1 (`u8`, because `bool` is not `Pod`); 1 = tile placed.
     pub occupied: u8,
     pub letter: u8, // ascii lowercase a..z when occupied
+    /// 0/1; 1 = this tile is a blank (scores 0 points, forever).
+    pub blank: u8,
     pub player: Pubkey,
 }
 
 /// Zero-copy: deref'ing this account works directly on account memory instead
-/// of deserializing ~7.7 KB onto the SBF stack.
+/// of deserializing ~8.6 KB onto the SBF stack.
 #[account(zero_copy)]
 pub struct GameBoard {
     pub words_played: u64,
     pub cells: [Cell; TOTAL_CELLS],
     /// Tail padding for bytemuck `Pod` (total size must be 8-aligned).
-    pub _pad: [u8; 6],
+    pub _pad: [u8; 5],
 }
 
 
 impl GameBoard {
     pub const SPACE: usize =
-        8 + 8 + (TOTAL_CELLS * (1 + 1 + 32)) + 16; // discriminator + counter + cells + headroom
+        8 + 8 + (TOTAL_CELLS * (1 + 1 + 1 + 32)) + 16; // discriminator + counter + cells + headroom
 
     #[inline]
     pub fn idx(x: usize, y: usize) -> usize {
@@ -83,7 +88,12 @@ impl GameBoard {
 pub struct WordPlayed {
     pub player: Pubkey,
     pub word: String,
+    /// Scrabble points of the main word only (pre-cross total).
+    pub main_score_points: u64,
+    /// Total points paid out = main + all perpendicular cross words.
     pub score_points: u64,
+    /// Every perpendicular cross word formed this turn (client canonical order).
+    pub cross_words: Vec<String>,
     pub payout_lamports: u64,
     pub entry_fee_lamports: u64,
     pub burned_units: u64,

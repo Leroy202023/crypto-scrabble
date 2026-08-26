@@ -1,0 +1,78 @@
+{
+  "name": "Scrabble Bag #3",
+  "tier": "legendary",
+  "rng_seed": "0x278dde6cc",
+  "contents": [
+    {
+      "letter": "*",
+      "qty": 2
+    },
+    {
+      "letter": "a",
+      "qty": 1
+    },
+    {
+      "letter": "d",
+      "qty": 1
+    },
+    {
+      "letter": "e",
+      "qty": 4
+    },
+    {
+      "letter": "g",
+      "qty": 2
+    },
+    {
+      "letter": "i",
+      "qty": 3
+    },
+    {
+      "letter": "j",
+      "qty": 2
+    },
+    {
+      "letter": "m",
+      "qty": 1
+    },
+    {
+      "letter": "n",
+      "qty": 2
+    },
+    {
+      "letter": "q",
+      "qty": 1
+    },
+    {
+      "letter": "r",
+      "qty": 1
+    },
+    {
+      "letter": "t",
+      "qty": 1
+    },
+    {
+      "letter": "v",
+      "qty": 1
+    },
+    {
+      "letter": "z",
+      "qty": 1
+    }
+  ],
+  "sol_voucher_lamports": 250000000,
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "legendary"
+    },
+    {
+      "trait_type": "Tiles",
+      "value": 23
+    },
+    {
+      "trait_type": "Blanks",
+      "value": 2
+    }
+  ]
+}

@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { Board, Placement, evaluateRun, idx } from '../../shared/gameplay';
+import {
+  Board,
+  Placement,
+  evaluateRun,
+  idx,
+  scoreWordWithBonuses,
+  PREMIUM_ENABLED,
+} from '../../shared/gameplay';
+
+// Premium tests only run once the premium client is switched on (it must stay
+// in lockstep with the deployed program).
+const prem = PREMIUM_ENABLED ? it : it.skip;
 
 function empty(): Board {
   return Array.from({ length: 225 }, () => ({ occupied: false }));
@@ -128,5 +139,63 @@ describe('gameplay rules', () => {
     expect(evaluateRun(b, [{ x: 7, y: 7, letter: 'y' }], 0, true).ok).toBe(false);
     expect(evaluateRun(empty(), [{ x: 7, y: 7, letter: 'q' }], 0, true).ok).toBe(false);
     expect(evaluateRun(empty(), [], 0, true).ok).toBe(false);
+  });
+
+  prem('applies premium multipliers to newly placed tiles', () => {
+    // CAT on the center row: center (7,7) is a double-word square, so the
+    // first word is doubled -> (3+1+1)*2 = 10.
+    const b = empty();
+    const cat = evaluateRun(
+      b,
+      [
+        { x: 6, y: 7, letter: 'c' },
+        { x: 7, y: 7, letter: 'a' },
+        { x: 8, y: 7, letter: 't' },
+      ],
+      0,
+      true,
+    );
+    expect(cat.ok).toBe(true);
+    expect(cat.totalScore).toBe(10);
+
+    // OSO across CAT: the two O's land on (6,8) and (8,8), both double-letter
+    // squares -> main OSO=5, CO=5, AS=2, TO=3 = 15 (mirrors the on-chain test).
+    place(b, [
+      { x: 6, y: 7, letter: 'c' },
+      { x: 7, y: 7, letter: 'a' },
+      { x: 8, y: 7, letter: 't' },
+    ]);
+    const oso = evaluateRun(
+      b,
+      [
+        { x: 6, y: 8, letter: 'o' },
+        { x: 7, y: 8, letter: 's' },
+        { x: 8, y: 8, letter: 'o' },
+      ],
+      0,
+      false,
+    );
+    expect(oso.ok).toBe(true);
+    expect(oso.totalScore).toBe(15);
+  });
+
+  prem('scoreWordWithBonuses matches per-square multipliers', () => {
+    // (0,0) is a triple-word square, both letters new -> (1+3)*3 = 12
+    const posTW = [idx(0, 0), idx(1, 0)];
+    expect(scoreWordWithBonuses(posTW, 'ab', [true, true], [false, false])).toBe(12);
+
+    // a plain region: row 4 is "----D-----D----", so (0,4),(1,4) are plain
+    const posPlain = [idx(0, 4), idx(1, 4)];
+    expect(scoreWordWithBonuses(posPlain, 'ab', [true, true], [false, false])).toBe(4);
+
+    // (5,1) is a triple-letter square (row1 "-D---t---t---D-"): b there -> 1 + 3*3 = 10
+    const posTL = [idx(4, 1), idx(5, 1)];
+    expect(scoreWordWithBonuses(posTL, 'ab', [true, true], [false, false])).toBe(10);
+
+    // blanks always score 0 regardless of premiums
+    expect(scoreWordWithBonuses(posTW, 'ab', [true, true], [true, true])).toBe(0);
+
+    // a premium under an EXISTING tile does not apply
+    expect(scoreWordWithBonuses(posTW, 'ab', [false, false], [false, false])).toBe(4);
   });
 });

@@ -22,3 +22,7 @@ test-ledger/
 # misc
 .DS_Store
 *.log
+
+# runtime artifacts
+.known_players.json
+.vercel/

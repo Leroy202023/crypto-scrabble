@@ -4,10 +4,12 @@ import { Cell, Placement, RunResult, evaluateRun } from '@shared/gameplay';
 import { proofForWord } from '../lib/dict';
 import { loadEconomy, sol } from '../lib/state';
 import { buildSubmitWordTx } from '../lib/submitWord';
+import { friendlyError } from '../lib/friendlyError';
+import type { PendingTile } from './Board';
 
 type Props = {
   cells: Cell[];
-  placements: Record<number, string>;
+  placements: Record<number, PendingTile>;
   onSubmitted: () => void;
   onCleared: () => void;
 };
@@ -33,7 +35,7 @@ export default function SubmitPanel({ cells, placements, onSubmitted, onCleared 
     if (keys.length === 0 || !wallet.publicKey) return null;
     const placementsArr: Placement[] = keys.map((k) => {
       const i = Number(k);
-      return { x: i % 15, y: Math.floor(i / 15), letter: placements[i] };
+      return { x: i % 15, y: Math.floor(i / 15), letter: placements[i].letter };
     });
     const sameRow = placementsArr.every((p) => p.y === placementsArr[0].y);
     const sameCol = placementsArr.every((p) => p.x === placementsArr[0].x);
@@ -56,9 +58,17 @@ export default function SubmitPanel({ cells, placements, onSubmitted, onCleared 
     if (!wallet.publicKey || !preview?.ok || !preview.newMask.some(Boolean)) return;
     setBusy(true);
     try {
-      // dictionary proof (client-side pre-check; the chain re-verifies)
-      const pf = await proofForWord(preview.word);
-      if (!pf) throw new Error(`"${preview.word}" is not in the dictionary`);
+      // dictionary proofs for the main word + every perpendicular cross-word
+      // (client-side pre-check; the chain re-verifies each one).
+      const proofs = await Promise.all(
+        preview.formedWords.map((w) => proofForWord(w)),
+      );
+      if (proofs.some((p) => !p)) {
+        const bad = preview.formedWords[proofs.findIndex((p) => !p)];
+        throw new Error(`"${bad.toUpperCase()}" is not in the dictionary`);
+      }
+      const main = proofs[0]!;
+      const crossWords = proofs.slice(1).map((p) => ({ leafIndex: p!.leafIndex, proof: p!.proof }));
 
       const tx = await buildSubmitWordTx({
         player: wallet.publicKey,
@@ -67,8 +77,10 @@ export default function SubmitPanel({ cells, placements, onSubmitted, onCleared 
         direction: preview.direction,
         letters: Uint8Array.from(preview.letters),
         newMask: preview.newMask,
-        leafIndex: pf.leafIndex,
-        proof: pf.proof,
+        blankMask: preview.blankMask,
+        leafIndex: main.leafIndex,
+        proof: main.proof,
+        crossWords,
       });
 
       const sig = await wallet.sendTransaction(tx, connection);
@@ -76,7 +88,7 @@ export default function SubmitPanel({ cells, placements, onSubmitted, onCleared 
       onCleared();
       onSubmitted();
     } catch (e) {
-      setErr((e as Error).message ?? String(e));
+      setErr(friendlyError(e));
     } finally {
       setBusy(false);
     }
@@ -89,8 +101,11 @@ export default function SubmitPanel({ cells, placements, onSubmitted, onCleared 
         <span className="fineprint">Select a rack tile, then click empty board squares.</span>
       ) : preview.ok ? (
         <>
-          <div className="statline"><span>Main word</span><b>{preview.word.toUpperCase()}</b></div>
-          <div className="statline"><span>Score</span><b>{preview.totalScore} pts</b></div>
+           <div className="statline"><span>Main word</span><b>{preview.word.toUpperCase()}</b></div>
+           {preview.blankMask.some(Boolean) && (
+             <div className="statline"><span>Uses blank</span><b>{preview.blankMask.filter(Boolean).length} (0 pts each)</b></div>
+           )}
+           <div className="statline"><span>Score</span><b>{preview.totalScore} pts</b></div>
           <div className="statline"><span>Est. payout</span><b>{sol(preview.totalScore * perPointSol)}</b></div>
           <div className="statline">
             <span>Burns</span>

@@ -1,0 +1,143 @@
+{
+  "cluster": "https://api.devnet.solana.com",
+  "authority": "ABiV56njHJViDdgNz4det2doKBoa9iJmAY4sHNM33upF",
+  "treasury": "ABiV56njHJViDdgNz4det2doKBoa9iJmAY4sHNM33upF",
+  "transferFeeBps": 200,
+  "mints": {
+    "a": {
+      "mint": "9MvtqRtBPKFYx7uLYHCJsVHrqED1t8xVSgbGXtbNxGxL",
+      "decimals": 0,
+      "supply": "900000000"
+    },
+    "b": {
+      "mint": "GgNrsBiWGtZsdrYs4DR3q2LGk3sN4UQBXEvpYZhJNm2p",
+      "decimals": 0,
+      "supply": "200000000"
+    },
+    "c": {
+      "mint": "DbMaoavjKKM5ofKqjn3en9HuPrTp6ks1F3Ffp6j2NSti",
+      "decimals": 0,
+      "supply": "200000000"
+    },
+    "d": {
+      "mint": "3xNXfC78ffPcaeNreZxkDPXwHg3td7Y3wQuFyswnF3L8",
+      "decimals": 0,
+      "supply": "400000000"
+    },
+    "e": {
+      "mint": "7ZWFZ4ysqjuUNmqWHMBF62MFuPcTMDf8fZHywLgYef4U",
+      "decimals": 0,
+      "supply": "1200000000"
+    },
+    "f": {
+      "mint": "DYhtASMdCSse5GUpHHBw1u3Y9CaZS4Xt34wKGxkwXQkq",
+      "decimals": 0,
+      "supply": "200000000"
+    },
+    "g": {
+      "mint": "J42Ce3GtZGDjx6ombDiyA7ipFKoPCoRuRjPM7at8H9Le",
+      "decimals": 0,
+      "supply": "300000000"
+    },
+    "h": {
+      "mint": "4Ru6aCB5ybztAFnibQSgfNZRHBMvNBP5tYLhLnY7uc7g",
+      "decimals": 0,
+      "supply": "200000000"
+    },
+    "i": {
+      "mint": "Gc9jEUPQEdK5imLg1HhMSRE5AZvtwSM4uWHvpyjZpCAR",
+      "decimals": 0,
+      "supply": "900000000"
+    },
+    "j": {
+      "mint": "M4iFxjjN2Jfk1EgDCbxDTTXdmoYNhGem8F5TWBaXQws",
+      "decimals": 0,
+      "supply": "100000000"
+    },
+    "k": {
+      "mint": "DhzNyiUEBtmhMnbKb8BEuY6piRwZWFp49Xdc2i7tbkdu",
+      "decimals": 0,
+      "supply": "100000000"
+    },
+    "l": {
+      "mint": "5ySKrPiLyw5kzcPtXsqVR7voMAZNRz3RDkrGfnbUbBVV",
+      "decimals": 0,
+      "supply": "400000000"
+    },
+    "m": {
+      "mint": "5ieR3e91WTEyuAt8HFgmpH1eNdX5asgxPVnjFKHNR7ee",
+      "decimals": 0,
+      "supply": "200000000"
+    },
+    "n": {
+      "mint": "FofXcyEXpB5czz33voBHoR54oLnBdTx6YYAWFzBqe5Wt",
+      "decimals": 0,
+      "supply": "600000000"
+    },
+    "o": {
+      "mint": "3aazADWbB6ASafA18yumvxMtvKLvTxuEncG2tWobW8a5",
+      "decimals": 0,
+      "supply": "800000000"
+    },
+    "p": {
+      "mint": "FPZdBvfUKVaKWCaXuP6w82bGwUUSNjamdn123dE2NBXW",
+      "decimals": 0,
+      "supply": "200000000"
+    },
+    "q": {
+      "mint": "7iSFBUBDts7HLc1eL72uyYCE2L5zyANhSg6GYYqSZ9HE",
+      "decimals": 0,
+      "supply": "60000000"
+    },
+    "r": {
+      "mint": "HqPfyj5FEr5h57UE1toi9B9ikkUmA1rpVDcnVxRxGChu",
+      "decimals": 0,
+      "supply": "600000000"
+    },
+    "s": {
+      "mint": "DNxbPZ4QQYNC7BXBqxFZEc4sWtUxG71gZsuemWXEZ5B7",
+      "decimals": 0,
+      "supply": "400000000"
+    },
+    "t": {
+      "mint": "8QXCAaMP14kMP7QhtZvvy5LcPMt3T7EeE2tnewL5VY6r",
+      "decimals": 0,
+      "supply": "900000000"
+    },
+    "u": {
+      "mint": "H3P4VCpm7AEAupUPVWyEPw4Ntb92xHL7fweEvgmTALpf",
+      "decimals": 0,
+      "supply": "400000000"
+    },
+    "v": {
+      "mint": "EiKgzsJNQzv1nhe3P475P1DzFoqabAXYnCt8r7dJNKAJ",
+      "decimals": 0,
+      "supply": "200000000"
+    },
+    "w": {
+      "mint": "FTXxmWMYcXyDMxXUuL8CsCUzfq7FZHKpAo47gkHjGjCz",
+      "decimals": 0,
+      "supply": "200000000"
+    },
+    "x": {
+      "mint": "EQcAJtpnxtCpk4v4xSso7cDkP94GLLd59twbnmjfM7oY",
+      "decimals": 0,
+      "supply": "60000000"
+    },
+    "y": {
+      "mint": "5qAFUb6tm2jhMi2kJvX3iHDchq55cVkJg5bXtHc1KFa8",
+      "decimals": 0,
+      "supply": "200000000"
+    },
+    "z": {
+      "mint": "DKueqrQ2fCENvSK3J7zj559wiVDecVfK4M38M2vrPjCr",
+      "decimals": 0,
+      "supply": "60000000"
+    },
+    "*": {
+      "mint": "AGZs7kejfMxumfk3KUeysFm8dH4Yd7drbKsEfQH8EbPk",
+      "decimals": 0,
+      "supply": "200000000"
+    }
+  }
+}

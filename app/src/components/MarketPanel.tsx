@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 import { LETTERS, letterMints, sol } from '../lib/state';
+import { PriceInfo, formatSol } from '../lib/prices';
 
-type Props = { balances: Record<string, bigint>; burnQty: number };
+type Props = {
+  balances: Record<string, bigint>;
+  burnQty: number;
+  prices: Record<string, PriceInfo>;
+};
 
-export default function MarketPanel({ balances, burnQty }: Props) {
+export default function MarketPanel({ balances, burnQty, prices }: Props) {
   const [links, setLinks] = useState<{ letter: string; url: string; missing: boolean }[]>([]);
 
   useEffect(() => {
@@ -27,7 +32,7 @@ export default function MarketPanel({ balances, burnQty }: Props) {
           .map((l) => (
             <a key={l.letter} className="mkt" href={l.url} target="_blank" rel="noreferrer">
               ${l.letter}
-              <small>buy</small>
+              <small>{prices[l.letter.toLowerCase()] ? `${formatSol(prices[l.letter.toLowerCase()].price)}◎` : 'buy'}</small>
             </a>
           ))}
         {links.every((l) => !l.missing) && <span>Full rack. Go play.</span>}

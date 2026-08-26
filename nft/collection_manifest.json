@@ -1,0 +1,58 @@
+{
+  "count": 8,
+  "tiers": {
+    "common": 5,
+    "rare": 2,
+    "legendary": 1
+  },
+  "bags": [
+    {
+      "index": 0,
+      "tier": "common",
+      "tiles": 13,
+      "blanks": 0
+    },
+    {
+      "index": 1,
+      "tier": "rare",
+      "tiles": 20,
+      "blanks": 1
+    },
+    {
+      "index": 2,
+      "tier": "rare",
+      "tiles": 18,
+      "blanks": 1
+    },
+    {
+      "index": 3,
+      "tier": "legendary",
+      "tiles": 23,
+      "blanks": 2
+    },
+    {
+      "index": 4,
+      "tier": "common",
+      "tiles": 15,
+      "blanks": 1
+    },
+    {
+      "index": 5,
+      "tier": "common",
+      "tiles": 14,
+      "blanks": 0
+    },
+    {
+      "index": 6,
+      "tier": "common",
+      "tiles": 15,
+      "blanks": 0
+    },
+    {
+      "index": 7,
+      "tier": "common",
+      "tiles": 14,
+      "blanks": 0
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "name": "Scrabble Bag #0",
+  "tier": "common",
+  "rng_seed": "0x9e3779b9",
+  "contents": [
+    {
+      "letter": "a",
+      "qty": 1
+    },
+    {
+      "letter": "b",
+      "qty": 2
+    },
+    {
+      "letter": "f",
+      "qty": 2
+    },
+    {
+      "letter": "g",
+      "qty": 1
+    },
+    {
+      "letter": "i",
+      "qty": 1
+    },
+    {
+      "letter": "j",
+      "qty": 1
+    },
+    {
+      "letter": "l",
+      "qty": 1
+    },
+    {
+      "letter": "n",
+      "qty": 1
+    },
+    {
+      "letter": "o",
+      "qty": 1
+    },
+    {
+      "letter": "u",
+      "qty": 2
+    }
+  ],
+  "sol_voucher_lamports": 50000000,
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "common"
+    },
+    {
+      "trait_type": "Tiles",
+      "value": 13
+    },
+    {
+      "trait_type": "Blanks",
+      "value": 0
+    }
+  ]
+}

@@ -9,7 +9,7 @@ use anchor_lang::prelude::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("53h7akfbCsPwDPQax7ANViJp7gSs9BGn4bY4p9zFkrUT");
+declare_id!("AJVQGSNjciPGhotWNtoRSocWEVWGtFQNqkSVzmgiYMtx");
 
 #[program]
 pub mod crypto_scrabble {
@@ -22,6 +22,7 @@ pub mod crypto_scrabble {
         entry_fee_lamports: u64,
         payout_per_point_lamports: u64,
         burn_quantity_per_tile: u64,
+        blank_mint: Pubkey,
     ) -> Result<()> {
         instructions::initialize::handler(
             ctx,
@@ -29,6 +30,7 @@ pub mod crypto_scrabble {
             entry_fee_lamports,
             payout_per_point_lamports,
             burn_quantity_per_tile,
+            blank_mint,
         )
     }
 

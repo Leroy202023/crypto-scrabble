@@ -20,6 +20,8 @@ pub enum CryptoScrabbleError {
     ExistingLetterMismatch,
     #[msg("Dictionary proof failed - word not in dictionary")]
     DictionaryProofFailed,
+    #[msg("Submitted cross-word proofs do not match the cross words formed on the board")]
+    CrossWordCountMismatch,
     #[msg("Proof longer than maximum supported depth")]
     ProofTooLong,
     #[msg("Invalid letters payload (bytes must be a-z)")]

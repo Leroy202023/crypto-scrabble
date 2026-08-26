@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { BOARD, CONFIG, VAULT, connection, sol } from '../lib/state';
 
 type Stats = {
@@ -18,9 +18,9 @@ export default function GameStats() {
       try {
         const conn = connection();
         const [cfg, boardInfo, vault] = await Promise.all([
-          conn.getAccountInfo(CONFIG),
-          conn.getAccountInfo(BOARD),
-          conn.getAccountInfo(VAULT),
+          conn.getAccountInfo(CONFIG()),
+          conn.getAccountInfo(BOARD()),
+          conn.getAccountInfo(VAULT()),
         ]);
         if (!cfg || !boardInfo || stop) return;
         const d = cfg.data;
@@ -57,7 +57,7 @@ export default function GameStats() {
           <div className="statline"><span>Tokens burned</span><b>{stats.totalBurned.toLocaleString()}</b></div>
           <div className="statline"><span>Vault balance</span><b>{sol(stats.vaultSol)}</b></div>
           <div className="statline mono" style={{ fontSize: 11 }}>
-            <span>vault</span><span>{new PublicKey(VAULT).toBase58().slice(0, 12)}…</span>
+            <span>vault</span><span>{VAULT().toBase58().slice(0, 12)}…</span>
           </div>
         </>
       )}

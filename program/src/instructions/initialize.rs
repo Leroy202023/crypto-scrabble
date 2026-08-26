@@ -38,6 +38,7 @@ pub fn handler(
     entry_fee_lamports: u64,
     payout_per_point_lamports: u64,
     burn_quantity_per_tile: u64,
+    blank_mint: Pubkey,
 ) -> Result<()> {
     // `init` creates both accounts with fully zeroed data, so counter/cells/
     // letter_mints defaults come for free — only write the non-zero fields.
@@ -47,6 +48,7 @@ pub fn handler(
     config.entry_fee_lamports = entry_fee_lamports;
     config.payout_per_point_lamports = payout_per_point_lamports;
     config.burn_quantity_per_tile = burn_quantity_per_tile;
+    config.blank_mint = blank_mint;
     config.vault_bump = ctx.bumps.vault;
 
     emit!(GameInitialized {

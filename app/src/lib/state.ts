@@ -1,19 +1,25 @@
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { boardPda, configPda, vaultPda } from '@shared/program';
+import { getCluster, getClusterKey, getProgramId as clusterProgramId } from './clusters';
 
-export const RPC_URL =
-  (import.meta as unknown as { env: Record<string, string> }).env.VITE_RPC_URL ??
-  'http://127.0.0.1:8899';
+/** RPC endpoint for the currently selected cluster (see ./clusters). */
+export function getRpcUrl(): string {
+  return getCluster().rpc;
+}
 
-/** Program id is baked at build time; PDAs are deterministic from it. */
-export const PROGRAM_ID = new PublicKey('53h7akfbCsPwDPQax7ANViJp7gSs9BGn4bY4p9zFkrUT');
-export const CONFIG = configPda(PROGRAM_ID);
-export const BOARD = boardPda(PROGRAM_ID);
-export const VAULT = vaultPda(PROGRAM_ID);
+/** Program id is selected at runtime from the active cluster. */
+export function getProgramId(): PublicKey {
+  return clusterProgramId();
+}
+
+export const CONFIG = () => configPda(getProgramId());
+export const BOARD = () => boardPda(getProgramId());
+export const VAULT = () => vaultPda(getProgramId());
 export const TOKEN_PROGRAM = TOKEN_2022_PROGRAM_ID;
 
 export const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+export const BLANK_KEY = '*';
 export const DEFAULT_ENTRY_FEE_SOL = 0.05;
 export const DEFAULT_PAYOUT_PER_POINT_SOL = 0.005;
 export const DEFAULT_BURN_QTY = 1000;
@@ -21,6 +27,8 @@ export const DEFAULT_BURN_QTY = 1000;
 export type Deployment = {
   cluster: string;
   programId: string;
+  config: string;
+  board: string;
   vault: string;
   merkleRoot: string;
   economy: {
@@ -30,14 +38,23 @@ export type Deployment = {
   };
 };
 
+// ---- deployment.json (cluster-aware) ----
 let depPromise: Promise<Deployment | null> | null = null;
+let depCluster: string | null = null;
 
-/** deployment.json is produced by `npm run init:game` and served from /public. */
+function deploymentUrl(): string {
+  return `/deployment.${getClusterKey()}.json`;
+}
+
+/** deployment.<cluster>.json is produced by `npm run init:game`; falls back to /deployment.json. */
 export function loadDeployment(): Promise<Deployment | null> {
-  if (!depPromise) {
-    depPromise = fetch('/deployment.json')
+  const key = getClusterKey();
+  if (!depPromise || depCluster !== key) {
+    depCluster = key;
+    depPromise = fetch(deploymentUrl())
       .then((r) => (r.ok ? r.json() : null))
-      .catch(() => null);
+      .catch(() => null)
+      .then((d) => d ?? fetch('/deployment.json').then((r) => (r.ok ? r.json() : null)).catch(() => null));
   }
   return depPromise;
 }
@@ -63,23 +80,33 @@ export async function loadEconomy(): Promise<Economy> {
   };
 }
 
-/** letter -> mint pubkey (from letters.json served at /public). */
+// ---- letters.json (cluster-aware) ----
+/** letter -> mint pubkey, served per-cluster as /letters.<cluster>.json. */
 let mintsPromise: Promise<Record<string, PublicKey>> | null = null;
+let mintsCluster: string | null = null;
+
 export function letterMints(): Promise<Record<string, PublicKey>> {
-  if (!mintsPromise) {
-    mintsPromise = fetch('/letters.json')
-      .then((r) => r.json())
-      .then((j: { mints: Record<string, { mint: string }> }) => {
-        const map: Record<string, PublicKey> = {};
-        for (const [l, v] of Object.entries(j.mints)) map[l] = new PublicKey(v.mint);
-        return map;
-      });
+  const key = getClusterKey();
+  if (!mintsPromise || mintsCluster !== key) {
+    mintsCluster = key;
+    const load = (url: string) =>
+      fetch(url)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j: { mints: Record<string, { mint: string }> } | null) => {
+          if (!j?.mints) return null;
+          const map: Record<string, PublicKey> = {};
+          for (const [l, v] of Object.entries(j.mints)) map[l] = new PublicKey(v.mint);
+          return map;
+        });
+    mintsPromise = load(`/letters.${key}.json`)
+      .then((m) => m ?? load('/letters.json'))
+      .then((m) => m ?? {});
   }
   return mintsPromise;
 }
 
 export function connection(): Connection {
-  return new Connection(RPC_URL, 'confirmed');
+  return new Connection(getRpcUrl(), 'confirmed');
 }
 
 export function shortAddr(a: string): string {

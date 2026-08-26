@@ -6,7 +6,7 @@ skip-lint = false
 members = ["program"]
 
 [programs.localnet]
-crypto_scrabble = "53h7akfbCsPwDPQax7ANViJp7gSs9BGn4bY4p9zFkrUT"
+crypto_scrabble = "AJVQGSNjciPGhotWNtoRSocWEVWGtFQNqkSVzmgiYMtx"
 
 [registry]
 url = "https://api.apr.dev"
@@ -16,4 +16,4 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "npx ts-mocha -p ./tsconfig.anchor.json -t 1000000 tests/anchor/**/*.ts"
+test = "node scripts/patch_idl.mjs && npx ts-mocha -p ./tsconfig.anchor.json -t 1000000 tests/anchor/**/*.ts"
