@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+
+# build artifacts
+target/
+program/target/
+.anchor/
+dist/
+
+# keys & secrets — NEVER commit
+**/*-keypair.json
+.env
+.env.*
+id.json
+*.key
+wallet.json
+
+# solana localnet ledger
+test-ledger/
+.ledger/
+
+# misc
+.DS_Store
+*.log
+
+# runtime artifacts
+.known_players.json
+.vercel/
+
+# scrabble bags secrets & runtime
+data/bags/reveals.json
+data/bags/mints.json
+data/bags/ledger.json
+data/bags/.sigs.json
+data/bags/*.svg
+.bags_env
